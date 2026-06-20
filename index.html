@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Доставка еды | Суши · Пицца · Чикен</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: #faf7f2;
+            color: #2d2d2d;
+            padding-bottom: 160px; /* место для sticky корзины */
+        }
+
+        header {
+            background: linear-gradient(135deg, #e63920, #d62828);
+            color: white;
+            padding: 20px 16px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        header p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        /* Категории */
+        .categories {
+            display: flex;
+            gap: 8px;
+            padding: 16px 16px 4px;
+            overflow-x: auto;
+            background: white;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 98px; /* под header */
+            z-index: 15;
+        }
+        .cat-btn {
+            padding: 10px 24px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+            font-size: 0.95rem;
+        }
+        .cat-btn.active {
+            background: #e63920;
+            color: white;
+            box-shadow: 0 4px 10px rgba(230,57,32,0.3);
+        }
+
+        /* Меню */
+        .menu-container {
+            padding: 20px 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 25px rgba(0,0,0,0.1);
+        }
+        .card-img {
+            height: 180px;
+            background: #f3f3f3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            background: linear-gradient(135deg, #fef9e7, #fdebd0);
+        }
+        .card-body {
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .card-body h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        .card-body p {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
+            flex: 1;
+        }
+        .price {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #e63920;
+        }
+        .add-btn {
+            background: #e63920;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 4px;
+            font-size: 0.95rem;
+        }
+        .add-btn:hover {
+            background: #c72818;
+        }
+        .add-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Корзина (sticky снизу) */
+        .cart-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.15);
+            z-index: 30;
+            border-radius: 24px 24px 0 0;
+            padding: 16px;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            transition: max-height 0.3s ease;
+        }
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .cart-header h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .cart-count {
+            background: #e63920;
+            color: white;
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-size: 0.85rem;
+        }
+        .toggle-icon {
+            font-size: 1.5rem;
+            transition: transform 0.3s;
+        }
+        .cart-body {
+            overflow-y: auto;
+            max-height: 40vh;
+            margin-top: 12px;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .cart-body.open {
+            display: flex;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .cart-item-info {
+            flex: 1;
+        }
+        .cart-item-title {
+            font-weight: 600;
+        }
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .qty-btn {
+            background: #f0f0f0;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .qty-btn:hover {
+            background: #ddd;
+        }
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #e63920;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .cart-summary {
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .delivery-address {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .delivery-address input {
+            padding: 14px 16px;
+            border: 2px solid #eee;
+            border-radius: 14px;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.2s;
+        }
+        .delivery-address input:focus {
+            border-color: #e63920;
+        }
+        .order-btn {
+            background: #25D366; /* WhatsApp green */
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+            transition: 0.2s;
+        }
+        .order-btn:hover {
+            background: #1ebe57;
+        }
+        .order-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        /* Адаптив */
+        @media (max-width: 600px) {
+            .menu-container {
+                grid-template-columns: 1fr;
+            }
+            .cart-panel {
+                padding: 12px;
+                border-radius: 20px 20px 0 0;
+            }
+        }
+
+        .empty-cart-message {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🍣🍕🍗 Суши·Пицца·Чикен</h1>
+    <p>Быстрая доставка от 30 минут</p>
+</header>
+
+<div class="categories" id="category-buttons">
+    <button class="cat-btn active" data-category="all">Все</button>
+    <button class="cat-btn" data-category="sushi">Суши</button>
+    <button class="cat-btn" data-category="pizza">Пицца</button>
+    <button class="cat-btn" data-category="chicken">Чикен</button>
+</div>
+
+<div class="menu-container" id="menu-container"></div>
+
+<!-- Корзина -->
+<div class="cart-panel" id="cart-panel">
+    <div class="cart-header" id="cart-toggle">
+        <h2>
+            🛒 Корзина
+            <span class="cart-count" id="cart-count">0</span>
+        </h2>
+        <span class="toggle-icon" id="toggle-icon">▼</span>
+    </div>
+    <div class="cart-body" id="cart-body">
+        <div id="cart-items"></div>
+        <div class="cart-summary" id="cart-summary" style="display: none;">
+            <span>Итого:</span>
+            <span id="total-price">0 ₽</span>
+        </div>
+        <div class="delivery-address">
+            <input type="text" id="address-input" placeholder="Введите адрес доставки" />
+        </div>
+        <button class="order-btn" id="order-btn" disabled>
+            <span>📱</span> Оформить в WhatsApp
+        </button>
+        <div class="empty-cart-message" id="empty-message">Корзина пока пуста</div>
+    </div>
+</div>
+
+<script>
+    // ========== ТОВАРЫ ==========
+    const menuItems = [
+        // Суши
+        { id: 1, category: 'sushi', name: 'Филадельфия классик', desc: 'Лосось, сливочный сыр, авокадо', price: 590, emoji: '🍣' },
+        { id: 2, category: 'sushi', name: 'Калифорния', desc: 'Краб, огурец, икра тобико', price: 520, emoji: '🍣' },
+        { id: 3, category: 'sushi', name: 'Запечённый ролл с угрём', desc: 'Угорь, соус унаги, кунжут', price: 640, emoji: '🍣' },
+        { id: 4, category: 'sushi', name: 'Сет Микс', desc: '20 шт. ассорти популярных роллов', price: 1190, emoji: '🍱' },
+        // Пицца
+        { id: 5, category: 'pizza', name: 'Пепперони', desc: 'Пепперони, моцарелла, томатный соус', price: 680, emoji: '🍕' },
+        { id: 6, category: 'pizza', name: 'Маргарита', desc: 'Томаты, моцарелла, базилик', price: 550, emoji: '🍕' },
+        { id: 7, category: 'pizza', name: 'Чикен Барбекю', desc: 'Курица, соус BBQ, лук', price: 720, emoji: '🍕' },
+        { id: 8, category: 'pizza', name: 'Мясная', desc: 'Бекон, ветчина, фарш, перец', price: 790, emoji: '🍕' },
+        // Чикен
+        { id: 9, category: 'chicken', name: 'Крылышки острые', desc: '6 шт., соус чили', price: 450, emoji: '🍗' },
+        { id: 10, category: 'chicken', name: 'Стрипсы куриные', desc: '5 шт., панировка, сырный соус', price: 410, emoji: '🍗' },
+        { id: 11, category: 'chicken', name: 'Чикен бокс', desc: 'Ножки, картофель фри, напиток', price: 620, emoji: '🍗' },
+        { id: 12, category: 'chicken', name: 'Бургер Чикен', desc: 'Куриная котлета, салат, томат', price: 370, emoji: '🍔' },
+    ];
+
+    // ========== СОСТОЯНИЕ ==========
+    let cart = {}; // { id: { ...item, quantity } }
+    let currentCategory = 'all';
+
+    // ========== DOM ЭЛЕМЕНТЫ ==========
+    const menuContainer = document.getElementById('menu-container');
+    const cartItemsContainer = document.getElementById('cart-items');
+    const cartCountSpan = document.getElementById('cart-count');
+    const totalPriceSpan = document.getElementById('total-price');
+    const cartSummaryDiv = document.getElementById('cart-summary');
+    const orderBtn = document.getElementById('order-btn');
+    const addressInput = document.getElementById('address-input');
+    const emptyMessage = document.getElementById('empty-message');
+    const cartBody = document.getElementById('cart-body');
+    const toggleIcon = document.getElementById('toggle-icon');
+    const cartToggle = document.getElementById('cart-toggle');
+
+    // ========== ФУНКЦИИ ОТРИСОВКИ ==========
+    function renderMenu() {
+        const filtered = currentCategory === 'all'
+            ? menuItems
+            : menuItems.filter(item => item.category === currentCategory);
+
+        menuContainer.innerHTML = filtered.map(item => `
+            <div class="card">
+                <div class="card-img">${item.emoji}</div>
+                <div class="card-body">
+                    <h3>${item.name}</h3>
+                    <p>${item.desc}</p>
+                    <div class="price">${item.price} ₽</div>
+                    <button class="add-btn" data-id="${item.id}">Добавить ➕</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Навешиваем обработчики
+        document.querySelectorAll('.add-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id);
+                addToCart(id);
+            });
+        });
+    }
+
+    function addToCart(id) {
+        const item = menuItems.find(p => p.id === id);
+        if (!item) return;
+        if (cart[id]) {
+            cart[id].quantity += 1;
+        } else {
+            cart[id] = { ...item, quantity: 1 };
+        }
+        updateCartUI();
+        // Автоматически раскрываем корзину, если закрыта
+        if (!cartBody.classList.contains('open')) {
+            cartBody.classList.add('open');
+            toggleIcon.textContent = '▲';
+        }
+    }
+
+    function removeFromCart(id) {
+        if (cart[id] && cart[id].quantity > 1) {
+            cart[id].quantity -= 1;
+        } else {
+            delete cart[id];
+        }
+        updateCartUI();
+    }
+
+    function deleteFromCart(id) {
+        delete cart[id];
+        updateCartUI();
+    }
+
+    function updateCartUI() {
+        const cartItems = Object.values(cart);
+        const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+        const totalPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+        cartCountSpan.textContent = totalQuantity;
+        totalPriceSpan.textContent = totalPrice + ' ₽';
+
+        // Кнопка активна, если есть товары и введен адрес
+        const addressFilled = addressInput.value.trim().length > 3;
+        orderBtn.disabled = totalQuantity === 0 || !addressFilled;
+
+        // Показываем/скрываем сообщение о пустой корзине
+        if (totalQuantity === 0) {
+            emptyMessage.style.display = 'block';
+            cartSummaryDiv.style.display = 'none';
+        } else {
+            emptyMessage.style.display = 'none';
+            cartSummaryDiv.style.display = 'flex';
+        }
+
+        // Отрисовка списка товаров
+        cartItemsContainer.innerHTML = cartItems.map(item => `
+            <div class="cart-item">
+                <div class="cart-item-info">
+                    <div class="cart-item-title">${item.name}</div>
+                    <div style="font-size:0.85rem; color:#888;">${item.price} ₽ × ${item.quantity}</div>
+                </div>
+                <div class="cart-item-controls">
+                    <button class="qty-btn" data-id="${item.id}" data-action="minus">−</button>
+                    <span style="font-weight:600;">${item.quantity}</span>
+                    <button class="qty-btn" data-id="${item.id}" data-action="plus">+</button>
+                    <button class="remove-btn" data-id="${item.id}">🗑</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Обработчики кнопок внутри корзины
+        document.querySelectorAll('.qty-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id);
+                if (btn.dataset.action === 'plus') {
+                    addToCart(id);
+                } else {
+                    removeFromCart(id);
+                }
+            });
+        });
+        document.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.dataset.id);
+                deleteFromCart(id);
+            });
+        });
+    }
+
+    // ========== ОФОРМЛЕНИЕ В WHATSAPP ==========
+   function generateWhatsAppLink() {
+    const phone = '7058264449'; // ваш номер
+    const address = addressInput.value.trim();
+    const items = Object.values(cart);
+    if (items.length === 0 || !address) return '';
+
+    // Собираем обычный текст с эмодзи и переносами
+    let message = ` *Новый заказ!*\n`;
+    message += ` *Адрес доставки:* ${address}\n\n`;
+    message += `*Состав заказа:*\n`;
+    items.forEach(item => {
+        message += `• ${item.name} x${item.quantity} — ${item.price * item.quantity}₽\n`;
+    });
+    const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
+    message += `\n *Общая сумма:* ${total}₽`;
+
+    // Кодируем ВСЁ сообщение для URL
+    const text = encodeURIComponent(message);
+    return `https://wa.me/${phone}?text=${text}`;
+}
+
+    orderBtn.addEventListener('click', () => {
+        const link = generateWhatsAppLink();
+        if (link) {
+            window.open(link, '_blank');
+        }
+    });
+Ф
+    // Следим за полем адреса для активации кнопки
+    addressInput.addEventListener('input', updateCartUI);
+
+    // ========== КАТЕГОРИИ ==========
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentCategory = btn.dataset.category;
+            renderMenu();
+        });
+    });
+
+    // ========== СВОРАЧИВАНИЕ КОРЗИНЫ ==========
+    cartToggle.addEventListener('click', () => {
+        cartBody.classList.toggle('open');
+        toggleIcon.textContent = cartBody.classList.contains('open') ? '▲' : '▼';
+    });
+
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    renderMenu();
+    updateCartUI();
+    // Сразу открыть корзину для наглядности
+    cartBody.classList.add('open');
+    toggleIcon.textContent = '▲';
+</script>
+</body>
+</html>
